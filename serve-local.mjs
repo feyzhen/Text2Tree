@@ -1,5 +1,6 @@
 /* Text2Tree · 本地预览静态服务器（可选）：node serve-local.mjs  然后访问 http://localhost:8899
-   默认监听 0.0.0.0（全部网卡），启动时会打印可用的局域网地址；只想本机访问可临时改用 HOST=127.0.0.1 */
+   默认只监听 127.0.0.1（仅本机）；需要手机 / 局域网设备访问时用 HOST=0.0.0.0 启动，
+   启动日志会打印可用的局域网地址。端口与监听地址都可用 PORT、HOST 环境变量覆盖。 */
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { networkInterfaces } from "node:os";
@@ -8,8 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const PORT = Number(process.env.PORT || 8899);
-const HOST = process.env.HOST || "127.0.0.1";
-// const HOST = process.env.HOST || "0.0.0.0";
+const HOST = process.env.HOST || "127.0.0.1"; // 局域网访问：HOST=0.0.0.0
 
 /** 本机可用的局域网 IPv4 地址（排除回环与 169.254 链路本地，并去重）。 */
 const lanAddrs = () =>
@@ -54,7 +54,11 @@ const server = createServer(async (req, res) => {
       res.writeHead(404).end("Not Found");
       return;
     }
-    res.writeHead(200, { "Content-Type": MIME[extname(file)] || "application/octet-stream" });
+    res.writeHead(200, {
+      "Content-Type": MIME[extname(file)] || "application/octet-stream",
+      // 本地预览始终读最新文件，免得改了 JS / CSS 还在跑浏览器缓存
+      "Cache-Control": "no-store",
+    });
     res.end(await readFile(file));
   } catch (err) {
     res.writeHead(404).end("Not Found");
