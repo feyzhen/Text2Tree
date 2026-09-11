@@ -148,7 +148,7 @@ Text2Tree/
 - `tree-core.js` 不依赖框架、不触碰 DOM，可在 Node 中直接 `require("./tree-core.js")` 复用。
 - 无构建步骤、无需包管理器，改完文件刷新即可。
 - **多语言**：静态文案写在 HTML 的 `data-i18n` / `data-i18n-html` / `data-i18n-title` / `data-i18n-placeholder` / `data-i18n-aria` 属性上；动态文案集中在 `i18n.js` 的 `en` / `zh` 字典里。新增语言 = 新增一个字典对象 + 一个按钮选项。
-- `localStorage` 键：`t2t-theme`、`t2t-lang`、`t2t-history`，清除后即恢复默认。
+- `localStorage` 键：`t2t-theme`、`t2t-lang`、`t2t-history`、`t2t-draft`，清除后即恢复默认。
 
 ## 许可证
 

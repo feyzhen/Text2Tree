@@ -175,6 +175,7 @@
     rememberCollapse();
     state.nodes = C.parseText(editor.value, state.unit);
     renderTree();
+    persistDraft();
   }
 
   // 输入变化即自动重生成（已取消「自动生成」开关，无需再判断）
@@ -211,6 +212,7 @@
     editor.value = C.convertIndentUnits(editor.value, oldUnit, newUnit); // 保持层级自动换算
     syncUnitUI();
     regenerate();
+    persistDraft();
     editor.focus();
   }
 
@@ -601,11 +603,13 @@
     editor.value = C.buildSample(state.unit); // 按当前缩进单位生成示例
     regenerate();
     pushHistory(editor.value);
+    persistDraft();
     editor.focus();
   });
   $("#clearBtn").addEventListener("click", () => {
     editor.value = "";
     regenerate();
+    persistDraft();
     editor.focus();
   });
 
@@ -713,6 +717,34 @@
     root.setAttribute("data-theme", next);
     syncThemeUI();
   });
+
+  /* ---------- 当前编辑草稿（localStorage 记忆） ---------- */
+
+  const DRAFT_KEY = "t2t-draft"; // 当前编辑器内容与缩进样式，刷新后恢复
+  const VALID_UNITS = ["  ", "    ", "*", "-", "+"];
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      const it = JSON.parse(raw);
+      if (!it || typeof it !== "object") return null;
+      const text = String(it.text == null ? "" : it.text);
+      const unit = String(it.unit == null ? "" : it.unit);
+      if (!VALID_UNITS.includes(unit)) return null;
+      return { text, unit };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function persistDraft() {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ text: editor.value, unit: state.unit }));
+    } catch (e) {
+      /* 隐私模式 / 配额不足：本次会话内可用即可 */
+    }
+  }
 
   /* ---------- 历史输入（localStorage 记忆） ---------- */
 
@@ -1015,12 +1047,21 @@
   editor.addEventListener("blur", () => {
     if (previewing) return;
     pushHistory(editor.value);
+    persistDraft();
   });
 
   /* ---------- 初始化 ---------- */
   history = loadHistory();
-  editor.value = C.buildSample(state.unit); // 默认 2 空格示例
+  const draft = loadDraft();
+  if (draft && draft.text.trim()) {
+    state.unit = draft.unit;
+    editor.value = draft.text;
+  } else {
+    editor.value = C.buildSample(state.unit); // 默认 2 空格示例
+  }
   state.nodes = C.parseText(editor.value, state.unit);
   applyI18n(); // 应用界面语言：静态文案 + 动态文案 + 历史列表 + 预览统计
   document.documentElement.classList.remove("i18n-pending"); // 移除防闪烁遮罩
+
+  window.addEventListener("beforeunload", persistDraft);
 })();

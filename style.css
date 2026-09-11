@@ -79,8 +79,16 @@ html.i18n-pending body { visibility: hidden; }
   font-size: 22px;
   letter-spacing: .3px;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
+}
+.app-header h1 .brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: block;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .25);
 }
 .app-header h1 .sub { font-size: 13px; font-weight: 400; opacity: .85; }
 .header-badges { display: flex; gap: 8px; flex-wrap: wrap; }

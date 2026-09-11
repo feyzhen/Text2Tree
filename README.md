@@ -148,7 +148,7 @@ Text2Tree/
 - `tree-core.js` is framework-free and has no DOM access, so it can be reused from Node (`require("./tree-core.js")`) or bundled elsewhere.
 - There is no build step and no package manager requirement — edit the files and reload.
 - **i18n**: static strings live in the HTML as `data-i18n` / `data-i18n-html` / `data-i18n-title` / `data-i18n-placeholder` / `data-i18n-aria` attributes; dynamic strings live in the `en` / `zh` dictionaries in `i18n.js`. Adding a language means adding one dictionary object and one button option.
-- `localStorage` keys: `t2t-theme`, `t2t-lang`, `t2t-history`. Clearing them resets the app to its defaults.
+- `localStorage` keys: `t2t-theme`, `t2t-lang`, `t2t-history`, `t2t-draft`. Clearing them resets the app to its defaults.
 
 ## License
 
