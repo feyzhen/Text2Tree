@@ -8,9 +8,9 @@
   --accent: #2563eb;
   --accent-ink: #ffffff;
   --accent-soft: #eaf1ff;
+  /* 顶部头图渐变：暗色主题覆盖同名变量，避免多处重复书写 */
+  --header-grad: linear-gradient(120deg, #1d4ed8, #2563eb 55%, #3b82f6);
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, Menlo, monospace;
-  --danger-soft: #fee2e2;
-  --ok: #16a34a;
 }
 
 /* 手动暗色主题：html[data-theme="dark"]（右上角按钮切换，记忆于 localStorage） */
@@ -24,7 +24,7 @@
   --accent: #5b8cff;
   --accent-ink: #0b1220;
   --accent-soft: #1b2740;
-  --danger-soft: #4a1d1d;
+  --header-grad: linear-gradient(120deg, #16233f, #1e2f55 55%, #233a66);
 }
 
 /* 兜底：未手动指定主题时跟随系统深浅色（变量值与上方 data-theme="dark" 保持一致） */
@@ -39,7 +39,7 @@
     --accent: #5b8cff;
     --accent-ink: #0b1220;
     --accent-soft: #1b2740;
-    --danger-soft: #4a1d1d;
+    --header-grad: linear-gradient(120deg, #16233f, #1e2f55 55%, #233a66);
   }
 }
 
@@ -61,14 +61,8 @@ html.i18n-pending body { visibility: hidden; }
 
 /* ---------- header ---------- */
 .app-header {
-  background: linear-gradient(120deg, #1d4ed8, #2563eb 55%, #3b82f6);
+  background: var(--header-grad);
   color: #fff;
-}
-:root[data-theme="dark"] .app-header {
-  background: linear-gradient(120deg, #16233f, #1e2f55 55%, #233a66);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .app-header { background: linear-gradient(120deg, #16233f, #1e2f55 55%, #233a66); }
 }
 .header-inner {
   max-width: 1240px;
@@ -90,19 +84,26 @@ html.i18n-pending body { visibility: hidden; }
 }
 .app-header h1 .sub { font-size: 13px; font-weight: 400; opacity: .85; }
 .header-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 头部三个徽标（仓库 / 主题 / 语言）共用底色、描边与悬停反馈 */
 .badge {
   background: rgba(255, 255, 255, .16);
   border: 1px solid rgba(255, 255, 255, .28);
   border-radius: 999px;
   padding: 3px 10px;
+  color: #fff;
   font-size: 12px;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.badge:hover,
+.badge:focus-visible {
+  background: rgba(255, 255, 255, .3);
+  border-color: rgba(255, 255, 255, .55);
 }
 .badge-repo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 6px;
-  border-radius: 50%;
   width: 24px;
   height: 24px;
   box-sizing: border-box;
@@ -114,14 +115,10 @@ html.i18n-pending body { visibility: hidden; }
 }
 /* 仓库徽标同时作为跳转链接 */
 a.badge-repo {
-  color: #fff;
   text-decoration: none;
-  transition: background-color .15s ease, border-color .15s ease;
 }
 a.badge-repo:hover,
 a.badge-repo:focus-visible {
-  background: rgba(255, 255, 255, .3);
-  border-color: rgba(255, 255, 255, .55);
   text-decoration: underline;
 }
 /* 亮 / 暗主题切换按钮（与仓库徽标同款圆钮） */
@@ -132,17 +129,7 @@ button.badge-theme {
   width: 24px;
   height: 24px;
   padding: 0;
-  background: rgba(255, 255, 255, .16);
-  border: 1px solid rgba(255, 255, 255, .28);
-  border-radius: 50%;
-  color: #fff;
   cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
-}
-button.badge-theme:hover,
-button.badge-theme:focus-visible {
-  background: rgba(255, 255, 255, .3);
-  border-color: rgba(255, 255, 255, .55);
 }
 .badge-theme svg { width: 14px; height: 14px; fill: currentColor; }
 /* 亮色显示“月亮”（点击进入暗色）；暗色显示“太阳”（点击回到亮色） */
@@ -161,17 +148,7 @@ button.badge-lang {
   font-size: 11px;
   line-height: 1;
   letter-spacing: .3px;
-  background: rgba(255, 255, 255, .16);
-  border: 1px solid rgba(255, 255, 255, .28);
-  border-radius: 999px;
-  color: #fff;
   cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
-}
-button.badge-lang:hover,
-button.badge-lang:focus-visible {
-  background: rgba(255, 255, 255, .3);
-  border-color: rgba(255, 255, 255, .55);
 }
 .badge-lang .lang-opt { opacity: .6; }
 .badge-lang .lang-sep { opacity: .45; }
@@ -329,7 +306,6 @@ html[data-lang="en"] .badge-lang .lang-opt[data-lang="en"] { opacity: 1; font-we
 .tname.folder { cursor: pointer; }
 .tname.folder:hover { text-decoration: underline dotted; }
 .tname.collapsed { color: var(--accent); opacity: .75; font-style: italic; }
-.tname.no-kids { color: inherit; }
 .empty-tip { padding: 60px 20px; text-align: center; color: var(--ink-2); }
 .empty-tip p { margin: 4px 0; }
 .muted { opacity: .7; }
