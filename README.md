@@ -136,7 +136,8 @@ Text2Tree/
 ├─ i18n.js           # UI strings (en / zh), loaded before app.js
 ├─ tree-core.js      # Pure logic core: parsing, tree rendering, indent conversion (UMD: browser + Node)
 ├─ app.js            # Interaction layer: editor behaviour, indent styles, theme, i18n, history
-├─ favicon.svg       # Site icon
+├─ favicon.svg       # Site icon (also the header brand logo)
+├─ social-card.png   # Social share thumbnail used as og:image (1200×630)
 ├─ serve-local.mjs   # Optional local static server
 ├─ README.md         # This file (English)
 ├─ README.zh-CN.md   # 简体中文说明

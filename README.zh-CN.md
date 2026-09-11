@@ -136,7 +136,8 @@ Text2Tree/
 ├─ i18n.js           # 界面文案表（en / zh），在 app.js 之前加载
 ├─ tree-core.js      # 纯逻辑核心：解析 / 树形渲染 / 缩进换算（UMD，浏览器与 Node 通用）
 ├─ app.js            # 交互层：编辑行为、缩进样式、主题、多语言、历史
-├─ favicon.svg       # 站点图标
+├─ favicon.svg       # 站点图标（同时用作头部品牌图标）
+├─ social-card.png   # 社交分享缩略图，用作 og:image（1200×630）
 ├─ serve-local.mjs   # 可选的本地静态服务器
 ├─ README.md         # English
 ├─ README.zh-CN.md   # 本文件（简体中文）

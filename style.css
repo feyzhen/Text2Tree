@@ -85,7 +85,7 @@ html.i18n-pending body { visibility: hidden; }
 .app-header h1 .brand-logo {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 6px; /* 与 SVG 自带的圆角一致，避免二次裁切 */
   display: block;
   flex: none;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .25);
