@@ -34,6 +34,8 @@
     })();
   </script>
   <link rel="stylesheet" href="style.css">
+  <!-- 脚本被禁用 / 拦截时及时解除防闪烁遮罩，避免页面一直空白 -->
+  <noscript><style>html.i18n-pending body { visibility: visible; }</style></noscript>
 </head>
 <body>
   <header class="app-header">
@@ -169,7 +171,7 @@
               <li><b>Tab</b> / <b>Shift+Tab</b>: indent / outdent the whole line (works on multi-line selections too)</li>
               <li><b>Enter</b> / <b>Shift+Enter</b>: the new line inherits the current indentation and bullet marker (splitting mid-line keeps the level)</li>
               <li><b>Shift+Backspace</b>: delete up to the start of the content (indent and marker are kept); if the line has no content, remove the line and move to the end of the previous one</li>
-              <li><code>Ctrl / Cmd + Enter</code>: generate now; click a node name in the preview to collapse / expand it; <code>Ctrl+C</code> copies the visible text</li>
+              <li><code>Ctrl / Cmd + Enter</code>: generate now; click a node name in the preview to collapse / expand it</li>
             </ul>
           </div>
         </div>

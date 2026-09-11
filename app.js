@@ -67,6 +67,7 @@
       emptyTitle: "Nothing here yet",
       emptyDesc: "Type or paste text above, or click “Load Sample”.",
       previewFoot: "Click a node name to collapse / expand",
+      nodeToggle: "Collapse / expand this branch",
 
       docsSummary: "Usage",
       docsRuleH: "Rules & Syntax",
@@ -79,7 +80,7 @@
         "<li><b>Tab</b> / <b>Shift+Tab</b>: indent / outdent the whole line (works on multi-line selections too)</li>" +
         "<li><b>Enter</b> / <b>Shift+Enter</b>: the new line inherits the current indentation and bullet marker (splitting mid-line keeps the level)</li>" +
         "<li><b>Shift+Backspace</b>: delete up to the start of the content (indent and marker are kept); if the line has no content, remove the line and move to the end of the previous one</li>" +
-        "<li><code>Ctrl / Cmd + Enter</code>: generate now; click a node name in the preview to collapse / expand it; <code>Ctrl+C</code> copies the visible text</li>",
+        "<li><code>Ctrl / Cmd + Enter</code>: generate now; click a node name in the preview to collapse / expand it</li>",
       footer: "Text2Tree · Pure front-end · All data is processed locally in your browser",
 
       histBtn: "History",
@@ -140,6 +141,7 @@
       emptyTitle: "还没有内容",
       emptyDesc: "在上方输入文本 / 列表，或点击「加载示例」。",
       previewFoot: "点击节点名称可折叠 / 展开",
+      nodeToggle: "折叠 / 展开该分支",
 
       docsSummary: "使用说明",
       docsRuleH: "规则与语法",
@@ -152,7 +154,7 @@
         "<li><b>Tab</b> / <b>Shift+Tab</b>：整行增加 / 减少一级缩进（多行选区同时生效）</li>" +
         "<li><b>Enter</b> / <b>Shift+Enter</b>：换行时继承当前行缩进与项目符号（行中回车拆分亦保持层级）</li>" +
         "<li><b>Shift+Backspace</b>：删到正文起点（保留缩进与符号）；整行无内容则删除该行并回到上一行行尾</li>" +
-        "<li><code>Ctrl / Cmd + Enter</code>：立即生成；预览区点击节点名称折叠 / 展开，<code>Ctrl+C</code> 复制所见文本</li>",
+        "<li><code>Ctrl / Cmd + Enter</code>：立即生成；预览区点击节点名称折叠 / 展开</li>",
       footer: "Text2Tree · 纯前端 · 数据仅在浏览器本地处理",
 
       histBtn: "历史",
@@ -306,8 +308,9 @@
         html.push(
           '<div class="trow" data-id="' + r.node.id + '">' +
             esc(r.prefix + r.conn) +
-            '<span class="' + cls.join(" ") + '" data-id="' + r.node.id + '" title="' +
-            (r.hasKids ? "点击折叠 / 展开该分支" : "") + '">' + esc(r.name) + "</span>" +
+            '<span class="' + cls.join(" ") + '" data-id="' + r.node.id + '"' +
+            (r.hasKids ? ' title="' + esc(t("nodeToggle")) + '"' : "") + ">" +
+            esc(r.name) + "</span>" +
             "</div>"
         );
       }
@@ -849,7 +852,6 @@
   let previewing = false; // 是否正在“悬停预览”某条历史
   let previewBackup = null; // 预览前的编辑器内容
   let activeItem = null; // 当前悬停 / 聚焦的历史条目
-  let holdPreview = false; // 指针已离开列表、但停在编辑器 / 目录树面板上 → 继续保持预览
   let releaseTimer = null; // 延迟还原预览的计时器
   const previewPanels = document.querySelectorAll(".editor-panel, .preview-panel");
 
@@ -944,7 +946,7 @@
             esc(unitLabel(it.unit)) + "</span>"
           : "";
         return (
-          '<li class="hist-item" role="option" tabindex="0" data-i="' + i + '" title="' +
+          '<li class="hist-item" role="option" tabindex="0" aria-selected="false" data-i="' + i + '" title="' +
           esc(it.text.slice(0, 400)) + '">' +
           '<span class="hist-sum">' + esc(info.label) + "</span>" + tag +
           '<span class="hist-meta">' + esc(t("histLines", { n: info.count })) + " · " +
@@ -985,7 +987,6 @@
   function endPreview() {
     clearTimeout(releaseTimer);
     releaseTimer = null;
-    holdPreview = false;
     if (previewing) {
       editor.value = previewBackup == null ? "" : previewBackup;
       previewing = false;
@@ -995,13 +996,30 @@
     setPreviewUI(false);
   }
 
-  // 指针离开列表后延迟还原：若随即进入编辑器 / 目录树面板，则保持预览（方便对照查看效果）
+  // 指针离开列表后延迟还原：若随即移到编辑器 / 目录树面板，则保持预览（方便对照查看效果）
   function scheduleEndPreview() {
     clearTimeout(releaseTimer);
-    releaseTimer = setTimeout(() => {
-      if (holdPreview) return;
-      endPreview();
-    }, 320);
+    releaseTimer = setTimeout(endPreview, 320);
+  }
+
+  // 指针是否仍停在「可保持预览」的区域：两个面板（历史下拉本身就在编辑器面板内）
+  function inKeepArea(el) {
+    return !!(el && el.closest && el.closest(".editor-panel, .preview-panel"));
+  }
+
+  // 移回可保持预览的区域 → 取消待还原计时，否则从下拉挪到编辑区时预览会被 320ms 掉
+  function cancelEndPreview() {
+    if (!releaseTimer) return;
+    clearTimeout(releaseTimer);
+    releaseTimer = null;
+  }
+
+  // 当前项高亮（同时维护 listbox 的 aria-selected 状态）
+  function setActiveItem(el) {
+    activeItem = el;
+    histList.querySelectorAll(".hist-item").forEach((it) => {
+      it.setAttribute("aria-selected", String(it === el));
+    });
   }
 
   function openHistory() {
@@ -1033,31 +1051,32 @@
     editor.focus();
   }
 
-  if (histList) {
-    // 悬停 / 聚焦某条 → 编辑器与目录树变为该条预览；移开 → 还原
-    histList.addEventListener("mouseover", (ev) => {
+  if (histMenu && histList) {
+    // 悬停 / 聚焦某条 → 编辑器与目录树变为该条预览；移开 → 还原。
+    // 监听挂在下拉整体（含表头）上：在「列表 ↔ 表头」之间移动不会误触发还原。
+    histMenu.addEventListener("mouseover", (ev) => {
       const item = ev.target.closest(".hist-item");
       if (!item || item === activeItem) return;
-      activeItem = item;
-      holdPreview = false; // 回到列表 → 取消“保持预览”
-      clearTimeout(releaseTimer);
-      releaseTimer = null;
+      setActiveItem(item);
+      cancelEndPreview(); // 回到列表 → 取消待还原
       beginPreview(Number(item.dataset.i));
     });
-    histList.addEventListener("mouseleave", () => {
-      activeItem = null;
-      scheduleEndPreview(); // 稍等片刻：若随即移到编辑器 / 目录树面板则保持预览
+    histMenu.addEventListener("mouseleave", (ev) => {
+      setActiveItem(null);
+      // 稍等片刻：若随即移到编辑器 / 目录树面板则保持预览
+      if (inKeepArea(ev.relatedTarget)) cancelEndPreview();
+      else scheduleEndPreview();
     });
     histList.addEventListener("focusin", (ev) => {
       const item = ev.target.closest(".hist-item");
       if (!item || item === activeItem) return;
-      activeItem = item;
+      setActiveItem(item);
       beginPreview(Number(item.dataset.i));
     });
     histList.addEventListener("focusout", () => {
       setTimeout(() => {
         if (histList.contains(document.activeElement)) return;
-        activeItem = null;
+        setActiveItem(null);
         endPreview();
       }, 0);
     });
@@ -1105,17 +1124,13 @@
     }
   });
 
-  // 指针从历史列表移到编辑器 / 目录树面板上查看效果时，保持预览不还原
+  // 指针在两个面板之间移动时保持预览对照；离开面板（工具栏 / 页面外）才延迟还原
   previewPanels.forEach((panel) => {
-    panel.addEventListener("mouseenter", () => {
-      if (!previewing) return;
-      holdPreview = true;
-      clearTimeout(releaseTimer);
-      releaseTimer = null;
+    panel.addEventListener("mouseover", () => {
+      if (previewing) cancelEndPreview();
     });
-    panel.addEventListener("mouseleave", () => {
-      if (!holdPreview) return;
-      holdPreview = false;
+    panel.addEventListener("mouseleave", (ev) => {
+      if (!previewing || inKeepArea(ev.relatedTarget)) return;
       scheduleEndPreview();
     });
   });
