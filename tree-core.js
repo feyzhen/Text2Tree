@@ -34,9 +34,6 @@
     "+": { label: "+", width: 2, marker: "+" },
   };
 
-  // Markdown 无序列表项目符号（解析时统一剥除，不参与分层）
-  const MD_MARKERS = "[-*+]";
-
   function presetOf(unitRaw) {
     if (unitRaw == null) unitRaw = DEFAULT_INDENT;
     const key = String(unitRaw);
@@ -79,9 +76,9 @@
 
   /* ---------- 缩进测量 ---------- */
 
-  // 测量行首空白：返回 { depth 层级, rest 去除缩进后的剩余内容 }
-  // 层级 = floor(空格数 / 单位宽度) + 制表符数；符号不参与计数。
-  function splitIndent(line, unitRaw) {
+  // 扫描行首空白：返回 { len 空白字符数, level 层级, rest 去除缩进后的剩余内容 }
+  // 层级 = floor(空格数 / 单位宽度) + 制表符数；Markdown 符号不参与计数。
+  function scanIndent(line, unitRaw) {
     const width = presetOf(unitRaw).width || DEFAULT_INDENT.length;
     let i = 0;
     let spaces = 0;
@@ -93,50 +90,33 @@
       else break;
       i++;
     }
-    return { depth: Math.floor(spaces / width) + tabs, rest: line.slice(i) };
-  }
-
-  // 兼容旧名（已被 splitIndent 取代，保留以便外部使用）
-  function measureIndent(run, unitRaw) {
-    return splitIndent(run, unitRaw).depth;
+    return { len: i, level: Math.floor(spaces / width) + tabs, rest: line.slice(i) };
   }
 
   // 剥掉一行内容最前面的 Markdown 项目符号（“- ”“* ”“+ ”，符号后需接空白或到行尾）
   // 返回 [是否命中, 去除符号后的内容]
+  const MD_MARKER_RE = /^([-*+])(?:[ \t]+(.*))?$/;
   function stripMarker(rest) {
-    const m = new RegExp("^(" + MD_MARKERS + ")(?:[ \\t]+(.*))?$").exec(rest);
+    const m = MD_MARKER_RE.exec(rest);
     if (!m) return [false, rest];
-    const label = (m[2] || "").trim();
-    return [true, label];
+    return [true, (m[2] || "").trim()];
   }
 
   // 把一整行行首缩进与项目符号从 from 单位换算为 to 单位（层级保持不变）。
   // 层级只看行首空格；换行时按 from.width 数出层级，剥掉旧符号，再按 to.width
   // 重排缩进并按 to.marker 决定是否添加 Markdown 项目符号。
+  // 返回 null 表示该行只剩符号、应整行丢弃（由 convertIndentUnits 过滤）
   function reindentLine(line, fromRaw, toRaw) {
-    const from = presetOf(fromRaw);
     const to = presetOf(toRaw);
     if (!line.trim()) return line; // 空行 / 纯空白行原样保留
 
-    const width = from.width || DEFAULT_INDENT.length;
-    let i = 0;
-    let spaces = 0;
-    let tabs = 0;
-    while (i < line.length) {
-      const ch = line[i];
-      if (ch === " ") spaces++;
-      else if (ch === "\t") tabs++;
-      else break;
-      i++;
-    }
-    const level = Math.floor(spaces / width) + tabs;
-
-    let content = line.slice(i);
+    const sp = scanIndent(line, fromRaw);
+    let content = sp.rest;
     const [, stripped] = stripMarker(content); // 剥掉旧符号，避免换算后重复
     content = stripped || "";
-    if (!content.trim()) return ""; // 只剩符号的行丢弃
+    if (!content.trim()) return null; // 只剩符号的行丢弃
 
-    const gap = " ".repeat(level * (to.width || DEFAULT_INDENT.length));
+    const gap = " ".repeat(sp.level * (to.width || DEFAULT_INDENT.length));
     const deco = to.marker ? to.marker + " " : "";
     return gap + deco + content;
   }
@@ -148,7 +128,11 @@
     if (from.label === to.label && from.width === to.width && from.marker === to.marker) {
       return String(text);
     }
-    return String(text).split("\n").map((line) => reindentLine(line, fromRaw, toRaw)).join("\n");
+    return String(text)
+      .split("\n")
+      .map((line) => reindentLine(line, fromRaw, toRaw))
+      .filter((line) => line !== null) // 只剩符号的空行在换算中被丢弃
+      .join("\n");
   }
 
   /* ---------- 解析 ---------- */
@@ -193,11 +177,11 @@
       const line = lines[li];
       if (!line.trim()) continue;
 
-      const sp = splitIndent(line, unitRaw);
+      const sp = scanIndent(line, unitRaw);
       const rest = sp.rest.trim();
       if (!rest) continue;
 
-      let depth = sp.depth;
+      let depth = sp.level;
       let label = rest;
       // Markdown 无序列表：剥除行首项目符号（- / * / +），不增加层级
       const [, stripped] = stripMarker(rest);
@@ -261,11 +245,6 @@
     return rows.map((r) => r.text).join("\n");
   }
 
-  // 顶层节点存在性
-  function hasAny(nodes) {
-    return !!(nodes && nodes.length);
-  }
-
   // 示例结构：[缩进层级, 该行内容]
   const SAMPLE_TREE = [
     [0, "react-app"],
@@ -289,24 +268,19 @@
     }).join("\n");
   }
 
-  const SAMPLE = buildSample(DEFAULT_INDENT); // 默认（两个空格）示例
-
   return {
     DEFAULT_INDENT,
     PRESETS,
     presetOf,
-    SAMPLE,
     buildSample,
     convertIndentUnits,
     makeNode,
     countNodes,
     expandAll,
     collapseAll,
-    measureIndent,
     parseText,
     renderRows,
     rowsToText,
-    hasAny,
     SYM_BRANCH,
     SYM_LAST,
     SYM_PIPE,
