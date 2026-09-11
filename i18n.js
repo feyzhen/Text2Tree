@@ -34,6 +34,7 @@
       chip2Title: "2 spaces per level; existing content is converted when switching",
       chip4Title: "4 spaces per level; existing content is converted when switching",
       chipMarkerTitle: "Markdown list marker — decorative only, does not affect nesting",
+      chipMarkerAria: "Use the Markdown “{m}” indent style (the marker is decorative and does not affect nesting)",
       loadSample: "Load Sample",
       clear: "Clear",
 
@@ -108,6 +109,7 @@
       chip2Title: "每级缩进 2 个空格；切换时按原层级自动换算",
       chip4Title: "每级缩进 4 个空格；切换时按原层级自动换算",
       chipMarkerTitle: "Markdown 列表符号，仅装饰、不参与分层",
+      chipMarkerAria: "使用 Markdown“{m}”缩进样式（符号仅装饰、不参与分层）",
       loadSample: "加载示例",
       clear: "清空",
 

@@ -68,9 +68,9 @@
     document.title = t("docTitle");
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", t("metaDesc"));
-    document.querySelectorAll("#langToggle .lang-opt").forEach((el) => {
-      el.setAttribute("aria-pressed", String(el.dataset.lang === state.lang));
-    });
+    // 语言按钮的可访问名由 data-i18n-aria 提供，aria-pressed 统一表示“当前是否中文界面”
+    const langBtn = $("#langToggle");
+    if (langBtn) langBtn.setAttribute("aria-pressed", String(state.lang === "zh"));
 
     syncUnitUI(); // 输入区提示 / 底部说明
     syncThemeUI(); // 主题按钮提示
@@ -143,11 +143,15 @@
       const cls = ["tname"];
       if (r.hasKids) cls.push("folder");
       if (r.collapsed) cls.push("collapsed");
+      // 可折叠节点做成可聚焦的按钮（Enter / 空格 同样能折叠），并用 aria-expanded 暴露状态
+      const attrs = r.hasKids
+        ? ' tabindex="0" role="button" aria-expanded="' + String(!r.collapsed) +
+          '" title="' + esc(t("nodeToggle")) + '"'
+        : "";
       parts.push(
         '<div class="trow" data-id="' + r.node.id + '">' +
           esc(r.prefix + r.conn) +
-          '<span class="' + cls.join(" ") + '" data-id="' + r.node.id + '"' +
-          (r.hasKids ? ' title="' + esc(t("nodeToggle")) + '"' : "") + ">" +
+          '<span class="' + cls.join(" ") + '" data-id="' + r.node.id + '"' + attrs + ">" +
           esc(r.name) + "</span>" +
           "</div>"
       );
@@ -187,6 +191,9 @@
       const on = ch.dataset.unit === state.unit;
       ch.classList.toggle("active", on);
       ch.setAttribute("aria-pressed", String(on));
+      // 符号类 chip 的可访问名称只有 “* - +”，title 不是可靠的可访问名，补一句说明
+      const p = C.presetOf(ch.dataset.unit);
+      if (p.marker) ch.setAttribute("aria-label", t("chipMarkerAria", { m: p.marker }));
     });
     editorTip.textContent = preset.marker
       ? t("tipMarker", { m: preset.marker })
@@ -613,16 +620,30 @@
     renderTree();
   });
 
-  // 点击节点名称 → 折叠 / 展开
-  treeRowsEl.addEventListener("click", (ev) => {
-    const nameEl = ev.target.closest(".tname.folder");
-    if (!nameEl) return;
-    const id = Number(nameEl.dataset.id);
-    const node = nodeById.get(id);
+  // 折叠 / 展开某节点；keepFocus 用于键盘操作后把焦点还给同一节点，便于连续按键
+  function toggleNode(nameEl, keepFocus) {
+    const node = nameEl && nodeById.get(Number(nameEl.dataset.id));
     if (!node || !node.children.length) return;
     node.collapsed = !node.collapsed;
     rememberCollapse();
     renderTree();
+    if (!keepFocus) return;
+    const again = treeRowsEl.querySelector('.tname.folder[data-id="' + node.id + '"]');
+    if (again) again.focus();
+  }
+
+  // 点击节点名称 → 折叠 / 展开
+  treeRowsEl.addEventListener("click", (ev) => {
+    toggleNode(ev.target.closest(".tname.folder"), false);
+  });
+
+  // 键盘 Enter / 空格 → 折叠 / 展开（节点已带 tabindex，可逐级 Tab 浏览）
+  treeRowsEl.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter" && ev.key !== " ") return;
+    const nameEl = ev.target.closest(".tname.folder");
+    if (!nameEl) return;
+    ev.preventDefault();
+    toggleNode(nameEl, true);
   });
 
   $("#copyBtn").addEventListener("click", copyTree);
@@ -679,6 +700,9 @@
     btn.title = label;
     btn.setAttribute("aria-label", label);
     btn.setAttribute("aria-pressed", String(isDark));
+    // 移动端浏览器地址栏配色跟随主题
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", isDark ? "#0f1420" : "#2563eb");
   }
 
   $("#themeToggle").addEventListener("click", () => {

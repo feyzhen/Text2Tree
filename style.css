@@ -305,6 +305,8 @@ html[data-lang="en"] .badge-lang .lang-opt[data-lang="en"] { opacity: 1; font-we
 .tname { cursor: default; border-radius: 3px; }
 .tname.folder { cursor: pointer; }
 .tname.folder:hover { text-decoration: underline dotted; }
+/* 键盘焦点（节点带 tabindex，可用 Tab + Enter/空格 折叠）：内描边 + 底纹 */
+.tname.folder:focus-visible { background: var(--accent-soft); outline: 1px solid var(--accent); outline-offset: -1px; }
 .tname.collapsed { color: var(--accent); opacity: .75; font-style: italic; }
 .empty-tip { padding: 60px 20px; text-align: center; color: var(--ink-2); }
 .empty-tip p { margin: 4px 0; }

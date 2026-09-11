@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A pure front-end tool that turns indented text or Markdown lists into a directory tree. Supports 2/4-space and Markdown (-, *, +) indent styles, Tab indenting, node collapsing and one-click copy.">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <!-- 分享卡片：静态英文，保证不执行 JS 的爬虫 / 社交平台也能读到 -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Text2Tree · Text to Directory Tree">
+  <meta property="og:description" content="Turn indented text or Markdown lists into a directory tree — pure front-end, no build, no backend, everything stays in your browser.">
+  <meta property="og:url" content="https://github.com/feyzhen/Text2Tree">
+  <meta name="twitter:card" content="summary">
   <title>Text2Tree · Text to Directory Tree</title>
   <script>
     // 主题 / 语言预置（防首帧闪烁）：优先本地记忆；无记忆时按系统深浅色与浏览器语言（不写入记忆，手动切换才固化）。
@@ -50,6 +58,7 @@
         </button>
 
         <!-- 界面语言切换（中 / 英），位于主题切换与 GitHub 仓库之间 -->
+        <!-- aria-pressed 表示“当前是否中文界面”，由 app.js 的 applyI18n 同步 -->
         <button type="button" id="langToggle" class="badge-lang" aria-pressed="true"
           data-i18n-aria="langToggle" data-i18n-title="langToggle"
           aria-label="Switch interface language" title="Switch interface language">
@@ -98,7 +107,7 @@
     <section class="columns">
       <div class="panel editor-panel">
         <div class="panel-head">
-          <h2 data-i18n="inputTitle">Input</h2>
+          <h2 id="inputHead" data-i18n="inputTitle">Input</h2>
           <span id="editorTip" class="hint"></span>
           <span class="head-spacer"></span>
           <!-- 内容操作：与输入框同处一个面板，就近可点 -->
@@ -125,7 +134,7 @@
           </div>
         </div>
         <div class="editor-wrap">
-          <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off"
+          <textarea id="editor" aria-labelledby="inputHead" spellcheck="false" autocapitalize="off" autocomplete="off"
             data-i18n-placeholder="placeholder"
             placeholder="Paste or type text, a directory listing or a Markdown bullet list here.&#10;&#10;Example:&#10;react-app&#10;  config/webpack.config.js/version.js&#10;  pages&#10;    home&#10;    package.json"></textarea>
         </div>
@@ -134,14 +143,14 @@
 
       <div class="panel preview-panel">
         <div class="panel-head">
-          <h2 data-i18n="previewTitle">Tree Preview</h2>
+          <h2 id="previewHead" data-i18n="previewTitle">Tree Preview</h2>
           <span id="statText" class="hint"></span>
           <span class="head-spacer"></span>
           <button type="button" id="collapseAll" class="btn btn-sm" data-i18n="collapseAll">Collapse All</button>
           <button type="button" id="expandAll" class="btn btn-sm" data-i18n="expandAll">Expand All</button>
           <button type="button" id="copyBtn" class="btn btn-sm btn-primary" data-i18n="copy">Copy Text</button>
         </div>
-        <div id="treeScroll" class="tree-scroll" tabindex="0">
+        <div id="treeScroll" class="tree-scroll" tabindex="0" role="region" aria-labelledby="previewHead">
           <div id="treeRows" class="tree-rows"></div>
           <div id="emptyTip" class="empty-tip" hidden>
             <p data-i18n="emptyTitle">Nothing here yet</p>
