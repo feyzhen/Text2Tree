@@ -1,0 +1,11 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 依赖与构建产物（本项目无构建步骤，预留给后续可能的工具链）
+node_modules/
+dist/
+
+# AI 助手工作区数据（本地记忆，不随仓库发布）
+.codebuddy/

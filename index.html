@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A pure front-end tool that turns indented text or Markdown lists into a directory tree. Supports 2/4-space and Markdown (-, *, +) indent styles, Tab indenting, node collapsing and one-click copy.">
+  <title>Text2Tree · Text to Directory Tree</title>
+  <script>
+    // 主题 / 语言预置（防首帧闪烁）：优先本地记忆；无记忆时按系统深浅色与浏览器语言（不写入记忆，手动切换才固化）。
+    (function () {
+      var root = document.documentElement;
+      try {
+        var t = localStorage.getItem("t2t-theme");
+        if (t !== "dark" && t !== "light") {
+          t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        root.setAttribute("data-theme", t);
+      } catch (e) {
+        root.removeAttribute("data-theme"); // 存储不可用 → 交给 CSS 媒体查询跟随系统
+      }
+      try {
+        // 界面语言：记忆 > 浏览器语言（zh* → 中文，其余 → 英文）
+        var l = localStorage.getItem("t2t-lang");
+        if (l !== "zh" && l !== "en") {
+          l = /^zh/i.test(navigator.language || navigator.userLanguage || "") ? "zh" : "en";
+        }
+        root.setAttribute("data-lang", l);
+      } catch (e2) {
+        root.setAttribute("data-lang", "en");
+      }
+      // 文案应用前先隐藏页面，避免语言切换瞬间闪烁；异常兜底 1.5s 后自动显示
+      root.classList.add("i18n-pending");
+      window.setTimeout(function () { root.classList.remove("i18n-pending"); }, 1500);
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <h1>Text2Tree<span class="sub" data-i18n="tagline">Text / List → Directory Tree</span></h1>
+      <div class="header-badges">
+        <button type="button" id="themeToggle" class="badge-theme" aria-pressed="false"
+          data-i18n-aria="themeToggle" data-i18n-title="themeToggle"
+          aria-label="Toggle light / dark theme" title="Toggle light / dark theme">
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.598 1.591a.749.749 0 0 1 .785-.175 7.001 7.001 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.499 5.499 0 1 0 7.678-7.678Z"/></svg>
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-1.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm5.657-8.157a.75.75 0 0 1 0 1.061l-1.061 1.06a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l1.06-1.06a.75.75 0 0 1 1.06 0Zm-9.193 9.193a.75.75 0 0 1 0 1.06l-1.06 1.061a.75.75 0 1 1-1.061-1.06l1.06-1.061a.75.75 0 0 1 1.061 0ZM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0ZM3 8a.75.75 0 0 1-.75.75H.75a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 3 8Zm13 0a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 16 8Zm-8 5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13Zm3.536-1.464a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM2.343 2.343a.75.75 0 0 1 1.061 0l1.06 1.061a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018l-1.06-1.06a.75.75 0 0 1 0-1.06Z"/></svg>
+        </button>
+
+        <!-- 界面语言切换（中 / 英），位于主题切换与 GitHub 仓库之间 -->
+        <button type="button" id="langToggle" class="badge-lang" aria-pressed="true"
+          data-i18n-aria="langToggle" data-i18n-title="langToggle"
+          aria-label="Switch interface language" title="Switch interface language">
+          <span class="lang-opt" data-lang="zh">中文</span>
+          <span class="lang-sep">/</span>
+          <span class="lang-opt" data-lang="en">EN</span>
+        </button>
+
+        <a class="badge badge-repo" href="https://github.com/feyzhen/Text2Tree" target="_blank"
+          rel="noopener" data-i18n-aria="repoLabel" data-i18n-title="repoTitle"
+          aria-label="Text2Tree GitHub repository" title="GitHub repository">
+          <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- 工具栏 -->
+    <section class="toolbar" data-i18n-aria="toolbar" aria-label="Toolbar">
+      <div class="indent-seg" role="group" data-i18n-aria="indentStyle" aria-label="Indent style">
+        <span class="seg-label" data-i18n="indentStyle">Indent style</span>
+        <button type="button" class="chip active" data-unit="  " aria-pressed="true"
+          data-i18n="chip2" data-i18n-title="chip2Title"
+          title="2 spaces per level; existing content is converted when switching">2 spaces</button>
+        <button type="button" class="chip" data-unit="    " aria-pressed="false"
+          data-i18n="chip4" data-i18n-title="chip4Title"
+          title="4 spaces per level; existing content is converted when switching">4 spaces</button>
+        <button type="button" class="chip" data-unit="*" aria-pressed="false"
+          data-i18n-title="chipMarkerTitle"
+          title="Markdown list marker — decorative only, does not affect nesting">*</button>
+        <button type="button" class="chip" data-unit="-" aria-pressed="false"
+          data-i18n-title="chipMarkerTitle"
+          title="Markdown list marker — decorative only, does not affect nesting">-</button>
+        <button type="button" class="chip" data-unit="+" aria-pressed="false"
+          data-i18n-title="chipMarkerTitle"
+          title="Markdown list marker — decorative only, does not affect nesting">+</button>
+      </div>
+      <span class="hint" data-i18n="indentHint">Nesting is decided by leading spaces</span>
+    </section>
+
+    <!-- 主区域：左编辑 / 右预览 -->
+    <section class="columns">
+      <div class="panel editor-panel">
+        <div class="panel-head">
+          <h2 data-i18n="inputTitle">Input</h2>
+          <span id="editorTip" class="hint"></span>
+          <span class="head-spacer"></span>
+          <!-- 内容操作：与输入框同处一个面板，就近可点 -->
+          <button type="button" id="loadSample" class="btn btn-sm" data-i18n="loadSample">Load Sample</button>
+          <button type="button" id="clearBtn" class="btn btn-sm btn-ghost" data-i18n="clear">Clear</button>
+          <!-- 历史输入：下拉查看最近输入，悬停预览、点击恢复 -->
+          <div class="hist-wrap" id="histWrap">
+            <button type="button" id="histBtn" class="btn btn-sm hist-btn" aria-haspopup="listbox"
+              aria-expanded="false" data-i18n-aria="histBtnTitle" aria-label="Input history">
+              <svg class="hist-mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"/></svg>
+              <span data-i18n="histBtn">History</span>
+              <svg class="hist-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg>
+            </button>
+            <div class="hist-menu" id="histMenu" hidden>
+              <div class="hist-head">
+                <span data-i18n="histHead">Recent inputs</span>
+                <button type="button" id="histClear" class="hist-clear"
+                  data-i18n="histClear" data-i18n-title="histClearTitle"
+                  title="Clear input history">Clear</button>
+              </div>
+              <ul class="hist-list" id="histList" role="listbox"
+                data-i18n-aria="histBtnTitle" aria-label="Input history"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="editor-wrap">
+          <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off"
+            data-i18n-placeholder="placeholder"
+            placeholder="Paste or type text, a directory listing or a Markdown bullet list here.&#10;&#10;Example:&#10;react-app&#10;  config/webpack.config.js/version.js&#10;  pages&#10;    home&#10;    package.json"></textarea>
+        </div>
+        <div class="editor-foot" id="editorFoot"></div>
+      </div>
+
+      <div class="panel preview-panel">
+        <div class="panel-head">
+          <h2 data-i18n="previewTitle">Tree Preview</h2>
+          <span id="statText" class="hint"></span>
+          <span class="head-spacer"></span>
+          <button type="button" id="collapseAll" class="btn btn-sm" data-i18n="collapseAll">Collapse All</button>
+          <button type="button" id="expandAll" class="btn btn-sm" data-i18n="expandAll">Expand All</button>
+          <button type="button" id="copyBtn" class="btn btn-sm btn-primary" data-i18n="copy">Copy Text</button>
+        </div>
+        <div id="treeScroll" class="tree-scroll" tabindex="0">
+          <div id="treeRows" class="tree-rows"></div>
+          <div id="emptyTip" class="empty-tip" hidden>
+            <p data-i18n="emptyTitle">Nothing here yet</p>
+            <p class="muted" data-i18n="emptyDesc">Type or paste text above, or click “Load Sample”.</p>
+          </div>
+        </div>
+        <div class="editor-foot" id="previewFoot" data-i18n="previewFoot">Click a node name to collapse / expand</div>
+      </div>
+    </section>
+
+    <!-- 说明 -->
+    <section class="docs">
+      <details open>
+        <summary data-i18n="docsSummary">Usage</summary>
+        <div class="docs-grid">
+          <div>
+            <h3 data-i18n="docsRuleH">Rules &amp; Syntax</h3>
+            <ul data-i18n-html="docsRules">
+              <li><b>Indentation defines nesting:</b> nesting is decided solely by <b>leading spaces</b>; equal indentation means the same level, the first line is the top level, and levels may only increase one step at a time.</li>
+              <li><b>Indent styles:</b> pick <code>2 spaces</code>, <code>4 spaces</code>, <code>*</code>, <code>-</code> or <code>+</code>. The last three are Markdown list styles — the marker is decorative and <b>does not affect nesting</b>. Existing content is converted automatically when you switch.</li>
+              <li><b>“/” expands siblings:</b> when a line is split with <code>/</code> (or <code>\</code>), the first segment is the current node and the remaining segments become its <b>sibling children</b>, e.g. <code>config/version.js</code>. Put deeper levels on separate lines.</li>
+            </ul>
+          </div>
+          <div>
+            <h3 data-i18n="docsKeyH">Shortcuts</h3>
+            <ul data-i18n-html="docsKeys">
+              <li><b>Tab</b> / <b>Shift+Tab</b>: indent / outdent the whole line (works on multi-line selections too)</li>
+              <li><b>Enter</b> / <b>Shift+Enter</b>: the new line inherits the current indentation and bullet marker (splitting mid-line keeps the level)</li>
+              <li><b>Shift+Backspace</b>: delete up to the start of the content (indent and marker are kept); if the line has no content, remove the line and move to the end of the previous one</li>
+              <li><code>Ctrl / Cmd + Enter</code>: generate now; click a node name in the preview to collapse / expand it; <code>Ctrl+C</code> copies the visible text</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="app-footer" data-i18n="footer">
+    Text2Tree · Pure front-end · All data is processed locally in your browser
+  </footer>
+
+  <script src="tree-core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
