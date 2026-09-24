@@ -40,7 +40,7 @@
 
       inputTitle: "Input",
       placeholder:
-        "Paste or type text, a directory listing or a Markdown bullet list here.\n\nExample:\nreact-app\n  config/webpack.config.js/version.js\n  pages\n    home\n    package.json",
+        "Paste or type text, a directory listing or a Markdown bullet list here.\n\nExample:\nreact-app\n  config\n    webpack.config.js\n  pages\n    home\n  package.json",
       previewTitle: "Tree Preview",
       collapseAll: "Collapse All",
       expandAll: "Expand All",
@@ -57,7 +57,8 @@
       docsRules:
         '<li><b>Indentation defines nesting:</b> nesting is decided solely by <b>leading spaces</b>; equal indentation means the same level, the first line is the top level, and levels may only increase one step at a time.</li>' +
         '<li><b>Indent styles:</b> pick <code>2 spaces</code>, <code>4 spaces</code>, <code>*</code>, <code>-</code> or <code>+</code>. The last three are Markdown list styles — the marker is decorative and <b>does not affect nesting</b>. Existing content is converted automatically when you switch.</li>' +
-        '<li><b>“/” expands siblings:</b> when a line is split with <code>/</code> (or <code>\\</code>), the first segment is the current node and the remaining segments become its <b>sibling children</b>, e.g. <code>config/version.js</code>. Put deeper levels on separate lines.</li>',
+        '<li><b>“/” is plain text:</b> a slash inside a line is kept as written — <code>cls/det/seg</code> stays one node. Write siblings on separate lines.</li>' +
+        '<li><b>Paste is re-aligned:</b> multi-line text pasted on an indented (or bulleted) empty line is re-indented as a block — the first line keeps the current level, the rest keep their relative depth, and the indent style is converted for you.</li>',
       docsKeyH: "Shortcuts",
       docsKeys:
         "<li><b>Tab</b> / <b>Shift+Tab</b>: indent / outdent the whole line (works on multi-line selections too)</li>" +
@@ -85,7 +86,7 @@
       footPer: "{w} spaces",
       footPerMarker: "{w} spaces + {m}",
       footKeys:
-        "<b>Tab</b> / <b>Shift+Tab</b> indent or outdent a whole line · <b>Enter</b> / <b>Shift+Enter</b> inherits the indentation · <code>/</code> expands siblings.",
+        "<b>Tab</b> / <b>Shift+Tab</b> indent or outdent a whole line · <b>Enter</b> / <b>Shift+Enter</b> inherits the indentation · multi-line paste is re-aligned to the current level.",
       stat: "{total} nodes · {rows} rows shown",
       statCollapsed: " ({n} collapsed)",
     },
@@ -115,7 +116,7 @@
 
       inputTitle: "输入",
       placeholder:
-        "在这里粘贴或输入文本、目录结构或 Markdown 无序列表\n\n示例：\nreact-app\n  config/webpack.config.js/version.js\n  pages\n    home\n    package.json",
+        "在这里粘贴或输入文本、目录结构或 Markdown 无序列表\n\n示例：\nreact-app\n  config\n    webpack.config.js\n  pages\n    home\n  package.json",
       previewTitle: "目录树预览",
       collapseAll: "全部折叠",
       expandAll: "全部展开",
@@ -132,7 +133,8 @@
       docsRules:
         '<li><b>缩进定层级：</b>层级一律由<b>行首空格</b>决定，相同缩进为同一级，首行为顶层，只能逐级递增、不能越级。</li>' +
         '<li><b>缩进样式：</b>可选 <code>2 空格</code>、<code>4 空格</code>、<code>*</code>、<code>-</code>、<code>+</code>；后三者是 Markdown 列表写法，符号仅装饰、<b>不参与分层</b>。切换样式时已输入内容自动换算。</li>' +
-        '<li><b>“/”同级展开：</b>行内用 <code>/</code>（或 <code>\\</code>）分隔时，第一段为当前节点，其余段作为其<b>同级子节点</b>展开，例如 <code>config/version.js</code>。多级目录请分行书写。</li>',
+        '<li><b>“/”只是普通字符：</b>行内 <code>/</code> 不再展开，<code>cls/det/seg</code> 会作为一个节点名原样显示；并列关系请分行书写。</li>' +
+        '<li><b>粘贴自动对齐：</b>在带缩进（或项目符号）的空行后粘贴多行文本时，整块以当前行为基准重新缩进——首行对齐当前层级，其余行保持相对层级，并换算成当前缩进样式。</li>',
       docsKeyH: "快捷键",
       docsKeys:
         "<li><b>Tab</b> / <b>Shift+Tab</b>：整行增加 / 减少一级缩进（多行选区同时生效）</li>" +
@@ -159,7 +161,7 @@
       footPrefix: "层级由行首空格决定，当前每级 <b>{per}</b>。",
       footPer: "{w} 空格",
       footPerMarker: "{w} 空格 + {m}",
-      footKeys: "<b>Tab</b> / <b>Shift+Tab</b> 整行增减一级 · <b>Enter</b> / <b>Shift+Enter</b> 继承缩进 · 行内 <code>/</code> 同级展开。",
+      footKeys: "<b>Tab</b> / <b>Shift+Tab</b> 整行增减一级 · <b>Enter</b> / <b>Shift+Enter</b> 继承缩进 · 多行粘贴自动对齐当前层级。",
       stat: "共 {total} 个节点 · 当前显示 {rows} 行",
       statCollapsed: "（已折叠 {n}）",
     },

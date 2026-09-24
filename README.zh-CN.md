@@ -54,7 +54,9 @@ node serve-local.mjs
 
 ```text
 react-app
-  config/webpack.config.js/version.js
+  config
+    webpack.config.js
+    version.js
   pages
     home
     app
@@ -84,7 +86,9 @@ react-app
 
 ```text
 * react-app
-  * config/webpack.config.js/version.js
+  * config
+    * webpack.config.js
+    * version.js
   * pages
     * home
   * package.json
@@ -94,7 +98,8 @@ react-app
 
 1. **缩进定层级**：相同缩进为同一级；只能逐级递增、不能越级（越级会被收敛到当前可用的最深父级）。
 2. **缩进样式**：工具栏可选 `2 空格`、`4 空格`、`*`、`-`、`+`。Markdown 符号在解析时被剥除、从不参与层级计算；切换到符号样式时会自动补回符号。
-3. **`/` 同级展开**：行内用 `/`（或 `\`）分隔时，第一段为当前节点，其余段作为其同级子节点展开；`src/` 这类结尾分隔符会被忽略。多级目录请分行书写。
+3. **`/` 只是普通字符**：行内 `/` 原样保留，`cls/det/seg` 就是一个节点名；并列关系请分行书写（仅行尾多余的 `src/` 会被清掉）。
+4. **粘贴自动对齐**：在带缩进（或项目符号）的空行后粘贴多行文本时，整块以当前行为基准重新缩进——首行对齐当前层级、其余行保持相对层级，并换算成当前缩进样式；在正文中间粘贴则原样插入。
 
 ### 快捷键
 

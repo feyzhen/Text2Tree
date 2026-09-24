@@ -54,7 +54,9 @@ Type or paste text into the **Input** panel. Empty lines are ignored, and lines 
 
 ```text
 react-app
-  config/webpack.config.js/version.js
+  config
+    webpack.config.js
+    version.js
   pages
     home
     app
@@ -84,7 +86,9 @@ The same input with the `*` indent style:
 
 ```text
 * react-app
-  * config/webpack.config.js/version.js
+  * config
+    * webpack.config.js
+    * version.js
   * pages
     * home
   * package.json
@@ -94,7 +98,8 @@ The same input with the `*` indent style:
 
 1. **Indentation defines nesting.** Equal indentation means siblings, and a level may only grow one step at a time (a deeper jump is clamped to the deepest available parent).
 2. **Indent styles.** Choose `2 spaces`, `4 spaces`, `*`, `-` or `+` in the toolbar. Markdown markers are stripped during parsing and never count as a level; they are re-added when you switch to a marker style.
-3. **`/` expands siblings.** Segments separated by `/` (or `\`) become siblings: the first segment is the current node, the rest are its sibling children. Trailing separators such as `src/` are ignored. Write deeper levels on separate lines.
+3. **`/` is plain text.** A slash inside a line is kept as written, so `cls/det/seg` stays a single node — write siblings on separate lines. Only a trailing separator (`src/`) is trimmed.
+4. **Paste is re-aligned.** Multi-line text pasted on an indented (or bulleted) empty line is re-indented as a block: the first line keeps the current level, the rest keep their relative depth, and the indent width / marker is converted to your current style. Pasting anywhere else is inserted as-is.
 
 ### Shortcuts
 

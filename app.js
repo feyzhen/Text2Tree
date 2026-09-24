@@ -550,6 +550,64 @@
     return true;
   }
 
+  /* ---------- 粘贴对齐 ---------- */
+
+  /**
+   * 多行粘贴时把整块按「当前行缩进」重新对齐：
+   * 首行对齐到当前层级，其余行保持相对层级，同时换算成当前缩进样式（含项目符号）。
+   * 仅接管“光标停在行首缩进区 / 符号行前缀区”的粘贴；其余情况返回 false 走浏览器默认粘贴。
+   */
+  function pasteReindent(text) {
+    const ta = editor;
+    if (ta.selectionStart !== ta.selectionEnd) return false; // 有选区：交给默认替换
+    if (String(text).indexOf("\n") === -1) return false; // 单行：保持默认
+    const v = ta.value;
+    const s = ta.selectionStart;
+    const { start, line } = caretLine(v, s);
+    const col = s - start;
+
+    // 光标左侧必须全在“缩进区 / 符号行前缀区”，才认为是“在缩进后粘贴”
+    const li = listInfo(line);
+    const contentCol = li ? Math.min(li.contentStart, line.length) : /^[ \t]*/.exec(line)[0].length;
+    if (col > contentCol) return false;
+
+    const baseLevel = C.scanIndent(line, state.unit).level; // 当前行层级 = 整块的对齐基准
+    const block = C.alignBlock(text, baseLevel, state.unit); // 整块重排（含缩进宽度 / 项目符号换算）
+
+    // 当前行的“缩进 / 符号”前缀换成规范化前缀，再插入重排后的整块
+    // 注意：contentCol 是行内列偏移，必须换算成全文绝对下标
+    ta.setRangeText("", start, start + contentCol, "end");
+    const at = ta.selectionStart;
+    ta.setRangeText(block, at, at, "end");
+    scheduleRegenerate();
+    return true;
+  }
+
+  // 多行粘贴：接管并重排；单行粘贴保持默认（行首缩进已由当前行提供）
+  let pasteHandled = false; // 同一个粘贴动作只处理一次（paste 与 beforeinput 可能都触发）
+  editor.addEventListener("paste", (ev) => {
+    const cd = ev.clipboardData;
+    if (!cd) return;
+    const text = cd.getData("text/plain") || cd.getData("text");
+    if (!text || text.indexOf("\n") === -1) return;
+    if (pasteReindent(text)) {
+      pasteHandled = true;
+      setTimeout(() => { pasteHandled = false; }, 0);
+      ev.preventDefault();
+    }
+  });
+
+  // 兜底：paste 事件拿不到剪贴板（部分浏览器 / 拖放文本进编辑区）时，改在 beforeinput 阶段接管
+  editor.addEventListener("beforeinput", (ev) => {
+    if (ev.inputType !== "insertFromPaste" && ev.inputType !== "insertFromDrop") return;
+    if (pasteHandled) { pasteHandled = false; return; }
+    const dt = ev.dataTransfer;
+    if (!dt) return;
+    const text = dt.getData("text/plain") || dt.getData("text");
+    if (!text || text.indexOf("\n") === -1) return;
+    if (pasteReindent(text)) ev.preventDefault();
+  });
+
   /* ---------- 事件绑定 ---------- */
 
   editor.addEventListener("keydown", (ev) => {

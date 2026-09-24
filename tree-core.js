@@ -1,5 +1,5 @@
 /* Text2Tree · tree-core.js
- * 纯逻辑核心：文本/Markdown/“/”展开解析 + 目录树文本渲染 + 折叠状态。
+ * 纯逻辑核心：文本 / Markdown 列表解析 + 目录树文本渲染 + 折叠状态。
  * 无任何 DOM 依赖，浏览器(window.TreeCore)与 Node(module.exports) 通用。
  *
  * 缩进模型：
@@ -7,6 +7,7 @@
  *   - “缩进符”可选 5 类：2空格 / 4空格 / “-” / “*” / “+”。
  *     “-”“*”“+” 是 Markdown 无序列表样式：只影响排版外观与项目符号，
  *     不参与分层 —— 符号本身不增加层级，层级仍看行首空格。
+ *   - 行内 “/” 只是普通字符：整行（去首尾空白后）即节点名，并列关系一律换行书写。
  */
 (function (root, factory) {
   const api = factory();
@@ -135,12 +136,75 @@
       .join("\n");
   }
 
+  /* ---------- 多行粘贴：整块对齐 ---------- */
+
+  // 行首空白宽度：制表符按 width 折算为空格数
+  function leadWidth(line, width) {
+    const ws = /^[\t ]*/.exec(line)[0];
+    let n = 0;
+    for (const ch of ws) n += ch === "\t" ? width : 1;
+    return n;
+  }
+
+  function gcdInt(a, b) {
+    return b ? gcdInt(b, a % b) : a;
+  }
+
+  // 嗅探一段文本的缩进单位宽度：各行行首宽度的最大公约数；判断不出时回退 fallback
+  function sniffIndentWidth(lines, fallback) {
+    let g = 0;
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const w = leadWidth(line, fallback);
+      if (!w) continue;
+      g = g ? gcdInt(g, w) : w;
+    }
+    return g > 0 && g <= 8 ? g : fallback;
+  }
+
+  // 剥掉行首缩进与 Markdown 项目符号，只留正文
+  function stripToBody(line) {
+    const body = String(line).trim();
+    const m = MD_MARKER_RE.exec(body);
+    return m ? (m[2] || "").trim() : body;
+  }
+
+  /**
+   * 把一段多行文本整块对齐到 baseLevel 级：首行落在 baseLevel，其余行保持相对层级差，
+   * 并按目标缩进样式（toRaw）重写缩进与项目符号。空行原样保留（不补缩进、不补符号）。
+   * 用于“在缩进后粘贴多行”：整块跟着当前行一起偏移，而不是只有第一行对齐。
+   */
+  function alignBlock(text, baseLevel, toRaw) {
+    const raw = String(text == null ? "" : text).replace(/\r\n?/g, "\n");
+    const lines = raw.split("\n");
+    const to = presetOf(toRaw);
+    const width = to.width || DEFAULT_INDENT.length;
+
+    const srcW = sniffIndentWidth(lines, width);
+    const levels = lines.map((l) => (l.trim() ? leadWidth(l, srcW) / srcW : null));
+    const firstIdx = levels.findIndex((x) => x !== null);
+    if (firstIdx === -1) return raw; // 整块都是空行 → 原样
+
+    const base = levels[firstIdx];
+    const deco = to.marker ? to.marker + " " : "";
+    return lines
+      .map((l, i) => {
+        const lv = levels[i];
+        if (lv === null) return ""; // 空行
+        const body = stripToBody(l);
+        if (!body) return ""; // 只剩符号的行按空行处理
+        const target = Math.max(0, Number(baseLevel || 0) + Math.floor(lv - base + 1e-6));
+        return " ".repeat(target * width) + deco + body;
+      })
+      .join("\n");
+  }
+
   /* ---------- 解析 ---------- */
 
   /**
    * 把文本解析为一组顶层目录节点（数组）。
    * - 层级由行首空白决定：每 width 个空格为 1 级，制表符 1 级
-   * - 行内 “/”“\” 同级展开：第一段为本层节点，其余段为其同级子节点
+   * - 行内 “/” 只是普通字符，不再展开：整行即一个节点名，并列关系请分行书写
    * - Markdown 无序列表：“- ”“* ”“+ ”（前面可有缩进）项目符号自动剥除，不参与分层
    * - 折叠状态以 collapseKey(ckey) 方式跨次解析保留
    */
@@ -190,18 +254,11 @@
         if (!label) continue;
       }
 
-      // 去掉尾部的路径分隔符，如 “src/” → “src”
-      label = label.replace(/[\\/]+$/, "");
+      // 整行即节点名：行内 “/” 按普通字符保留（并列关系请分行书写）
+      label = label.replace(/[\\/]+$/, ""); // 仅清掉行尾多余的分隔符，如 “src/” → “src”
       if (!label) continue;
 
-      const segs = label.split(/[\\/]+/).map((s) => s.trim()).filter(Boolean);
-      if (!segs.length) continue;
-
-      const head = insertNode(segs[0], depth);
-      for (let i = 1; i < segs.length; i++) {
-        insertNode(segs[i], depth + 1); // 其余段为 head 的同级子节点（插入点父级=head）
-      }
-      void head;
+      insertNode(label, depth);
     }
 
     return virtual.children;
@@ -248,7 +305,9 @@
   // 示例结构：[缩进层级, 该行内容]
   const SAMPLE_TREE = [
     [0, "react-app"],
-    [1, "config/webpack.config.js/version.js"],
+    [1, "config"],
+    [2, "webpack.config.js"],
+    [2, "version.js"],
     [1, "pages"],
     [2, "home"],
     [2, "app"],
@@ -274,6 +333,9 @@
     presetOf,
     buildSample,
     convertIndentUnits,
+    alignBlock,
+    sniffIndentWidth,
+    scanIndent,
     makeNode,
     countNodes,
     expandAll,

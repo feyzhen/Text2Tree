@@ -142,7 +142,7 @@
         <div class="editor-wrap">
           <textarea id="editor" aria-labelledby="inputHead" spellcheck="false" autocapitalize="off" autocomplete="off"
             data-i18n-placeholder="placeholder"
-            placeholder="Paste or type text, a directory listing or a Markdown bullet list here.&#10;&#10;Example:&#10;react-app&#10;  config/webpack.config.js/version.js&#10;  pages&#10;    home&#10;    package.json"></textarea>
+            placeholder="Paste or type text, a directory listing or a Markdown bullet list here.&#10;&#10;Example:&#10;react-app&#10;  config&#10;    webpack.config.js&#10;  pages&#10;    home&#10;  package.json"></textarea>
         </div>
         <div class="editor-foot" id="editorFoot"></div>
       </div>
@@ -177,7 +177,8 @@
             <ul data-i18n-html="docsRules">
               <li><b>Indentation defines nesting:</b> nesting is decided solely by <b>leading spaces</b>; equal indentation means the same level, the first line is the top level, and levels may only increase one step at a time.</li>
               <li><b>Indent styles:</b> pick <code>2 spaces</code>, <code>4 spaces</code>, <code>*</code>, <code>-</code> or <code>+</code>. The last three are Markdown list styles — the marker is decorative and <b>does not affect nesting</b>. Existing content is converted automatically when you switch.</li>
-              <li><b>“/” expands siblings:</b> when a line is split with <code>/</code> (or <code>\</code>), the first segment is the current node and the remaining segments become its <b>sibling children</b>, e.g. <code>config/version.js</code>. Put deeper levels on separate lines.</li>
+              <li><b>“/” is plain text:</b> a slash inside a line is kept as written — <code>cls/det/seg</code> stays one node. Write siblings on separate lines.</li>
+              <li><b>Paste is re-aligned:</b> multi-line text pasted on an indented (or bulleted) empty line is re-indented as a block — the first line keeps the current level, the rest keep their relative depth, and the indent style is converted for you.</li>
             </ul>
           </div>
           <div>

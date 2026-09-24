@@ -9,3 +9,6 @@ dist/
 
 # AI 助手工作区数据（本地记忆，不随仓库发布）
 .codebuddy/
+
+.idea/
+.vscode/
